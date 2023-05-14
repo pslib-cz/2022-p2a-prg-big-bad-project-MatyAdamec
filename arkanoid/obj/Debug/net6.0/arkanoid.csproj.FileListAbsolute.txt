@@ -1,0 +1,15 @@
+C:\Users\Maty\source\repos\arkanoid\arkanoid\obj\Debug\net6.0\arkanoid.csproj.AssemblyReference.cache
+C:\Users\Maty\source\repos\arkanoid\arkanoid\obj\Debug\net6.0\arkanoid.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Maty\source\repos\arkanoid\arkanoid\obj\Debug\net6.0\arkanoid.AssemblyInfoInputs.cache
+C:\Users\Maty\source\repos\arkanoid\arkanoid\obj\Debug\net6.0\arkanoid.AssemblyInfo.cs
+C:\Users\Maty\source\repos\arkanoid\arkanoid\obj\Debug\net6.0\arkanoid.csproj.CoreCompileInputs.cache
+C:\Users\Maty\source\repos\arkanoid\arkanoid\bin\Debug\net6.0\arkanoid.exe
+C:\Users\Maty\source\repos\arkanoid\arkanoid\bin\Debug\net6.0\arkanoid.deps.json
+C:\Users\Maty\source\repos\arkanoid\arkanoid\bin\Debug\net6.0\arkanoid.runtimeconfig.json
+C:\Users\Maty\source\repos\arkanoid\arkanoid\bin\Debug\net6.0\arkanoid.dll
+C:\Users\Maty\source\repos\arkanoid\arkanoid\bin\Debug\net6.0\arkanoid.pdb
+C:\Users\Maty\source\repos\arkanoid\arkanoid\obj\Debug\net6.0\arkanoid.dll
+C:\Users\Maty\source\repos\arkanoid\arkanoid\obj\Debug\net6.0\refint\arkanoid.dll
+C:\Users\Maty\source\repos\arkanoid\arkanoid\obj\Debug\net6.0\arkanoid.pdb
+C:\Users\Maty\source\repos\arkanoid\arkanoid\obj\Debug\net6.0\arkanoid.genruntimeconfig.cache
+C:\Users\Maty\source\repos\arkanoid\arkanoid\obj\Debug\net6.0\ref\arkanoid.dll
