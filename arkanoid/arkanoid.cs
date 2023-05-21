@@ -1,6 +1,7 @@
 ﻿using block;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Text;
@@ -18,7 +19,7 @@ public class ArkanoidGame
     private const int PaddleWidth = 18;
     private const int PaddleHeight = 1;
     private const int BallSize = 1;
-    private const int InitialLives = 3;
+    private const int InitialLives = 1;
 
 
     private readonly Random _random = new Random();
@@ -28,14 +29,15 @@ public class ArkanoidGame
     private bool _ballDirToTop = true;
 
     private int _score = 0;
-    private int _maxScore;
-    private int _previousScore = 0;
-    private int _previousLives = InitialLives;
     private int _lives = InitialLives;
     private int _ballX = Width / 2;
     private int _ballY = Height - PaddleHeight - BallSize - 1;
     private int _paddleX = Width / 2 - PaddleWidth / 2;
     private bool _gameOver = false;
+
+    private const int NumLevels = 5;
+    private int _currentLevel = 1;
+
 
     public ArkanoidGame()
     {
@@ -46,8 +48,7 @@ public class ArkanoidGame
         Console.Title = "Arkanoid";
 
         Console.Clear();
-        GenerateBlocks(_blocks);
-        DrawBlocks(_blocks);
+        StartNewLevel();
     }
 
     public void Run()
@@ -62,20 +63,99 @@ public class ArkanoidGame
                 UpdateBall(_blocks);
             }
 
+
+            DrawHud();
             RemoveBlocks(_blocks);
             HandleInput();
             DrawPaddle();
             DrawBall();
-            DrawScore();
-            DrawLives();
+
             
+            if (IsLevelCompleted())
+            {
+                _currentLevel++;
+                SaveGame();
+                if (_currentLevel == NumLevels)
+                {
+                    _gameOver= true;
+                    break;
+                }
+
+                Countdown();
+                GenerateBlocks(_blocks, GetBlockPatternForLevel(_currentLevel));
+                DrawBlocks(_blocks);
+                InitializeBall();
+                InitializePaddle();
+            }
+            
+
             Thread.Sleep(1);
             ballTime++;
         }
     }
 
+    public void StartNewGame()
+    {
+        GenerateBlocks(_blocks, GetBlockPatternForLevel(1));
+    }
+    private void StartNewLevel()
+    {
+        Countdown();
+        GenerateBlocks(_blocks, GetBlockPatternForLevel(_currentLevel));
+        DrawBlocks(_blocks);
+        InitializeBall();
+        InitializePaddle();
+    }
 
-    private void GenerateBlocks(Block[,] map)
+    private int[,] GetBlockPatternForLevel(int level)
+    {
+        switch (level)
+        {
+            case 1:
+                return new int[,]
+                {
+                    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                    { 0, 1, 1, 1, 1, 0, 1, 1, 1, 0 }
+                };
+            case 2:
+                return new int[,]
+                {
+                    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                    { 0, 0, 1, 1, 1, 1, 1, 1, 0, 0 },
+                    { 0, 0, 0, 1, 1, 1, 1, 0, 0, 0 },
+                    { 1, 0, 0, 0, 1, 1, 0, 0, 0, 1 }
+                };
+            case 3:
+                return new int[,]
+                {
+                    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+                };
+            case 4:
+                return new int[,]
+                {
+                    { 1, 0, 0, 1, 1, 1, 0, 0, 0, 1 },
+                    { 0, 0, 1, 1, 1, 1, 1, 0, 0, 0 },
+                    { 0, 0, 0, 1, 1, 1, 0, 0, 0, 0 },
+                    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 }
+                };
+            case 5:
+                return new int[,]
+                {
+                    { 1, 0, 0, 1, 1, 1, 0, 0, 0, 1 },
+                    { 0, 1, 1, 0, 0, 0, 1, 1, 1, 0 },
+                    { 0, 1, 0, 1, 1, 1, 0, 1, 0, 0 },
+                    { 1, 0, 1, 0, 0, 0, 1, 0, 1, 1 }
+                };
+            default:
+                return new int[NumBlocksX, NumBlocksY];
+        }
+    }
+    private void GenerateBlocks(Block[,] map, int[,] blockPattern)
     {
         for (int y = 0; y < NumBlocksY; y++)
         {
@@ -88,28 +168,29 @@ public class ArkanoidGame
                     color = (ConsoleColor)_random.Next(1, 16);
                 } while (HasAdjacentBlockWithSameColor(x, y, color, map));
 
-                _blocks[x, y] = new Block
-                    {
-                        X = x * BlockWidth,
-                        Y = y * BlockHeight,
-                        Color = color,
-                        Destroyed = false
+                bool isBlockPresent = blockPattern[y, x] == 1;
+                map[x, y] = new Block
+                {
+                    X = x * BlockWidth,
+                    Y = y * BlockHeight,
+                    Color = isBlockPresent ? color : ConsoleColor.Black,
+                    Destroyed = !isBlockPresent
                 };
-                
             }
         }
     }
+
+
     private bool HasAdjacentBlockWithSameColor(int x, int y, ConsoleColor color, Block[,] map)
     {
-        if (x > 0 && map[x - 1, y] != null && map[x - 1, y].Destroyed == false && map[x - 1, y].Color == color)
-        {
+        if (x > 0 && map[x - 1, y] != null && map[x - 1, y].Color == color)
             return true;
-        }
-        if (y > 0 && map[x, y - 1] != null && map[x, y - 1].Destroyed == false && map[x, y - 1].Color == color)
-        {
+        if (x < NumBlocksX - 1 && map[x + 1, y] != null && map[x + 1, y].Color == color)
             return true;
-        }
-
+        if (y > 0 && map[x, y - 1] != null && map[x, y - 1].Color == color)
+            return true;
+        if (y < NumBlocksY - 1 && map[x, y + 1] != null && map[x, y + 1].Color == color)
+            return true;
         return false;
     }
     private void RemoveBlocks(Block[,] map)
@@ -123,7 +204,7 @@ public class ArkanoidGame
                     Block block = map[x, y];
                     bool blockDestroyed = block.Destroyed;
 
-                    if (blockDestroyed)
+                    if (blockDestroyed && !block.IsRemoved)
                     {
                         for (int i = 0; i < BlockHeight; i++)
                         {
@@ -136,6 +217,8 @@ public class ArkanoidGame
                                 Console.Write(" ");
                             }
                         }
+
+                        block.IsRemoved = true;
                     }
                 }
             }
@@ -174,14 +257,12 @@ public class ArkanoidGame
     {
         Console.ForegroundColor = ConsoleColor.White;
 
-        // Draw dashes before the paddle
         for (int x = 0; x < _paddleX; x++)
         {
             Console.SetCursorPosition(x, Height - PaddleHeight);
             Console.Write(" ");
         }
 
-        // Draw the paddle
         for (int i = 0; i < PaddleHeight; i++)
         {
             for (int j = 0; j < PaddleWidth; j++)
@@ -194,7 +275,6 @@ public class ArkanoidGame
             }
         }
 
-        // Draw dashes after the paddle
         for (int x = _paddleX + PaddleWidth; x < Width; x++)
         {
             Console.SetCursorPosition(x, Height - PaddleHeight);
@@ -217,25 +297,26 @@ public class ArkanoidGame
             }
         }
     }
-    private void DrawScore()
+    private void DrawHud()
+    {        
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.SetCursorPosition(2, 0);
+        Console.Write($"Score: {_score}");
+        Console.SetCursorPosition(Width - 10, 0);
+        Console.Write($"Lives: {_lives}");
+    }
+    private void InitializeBall()
     {
-        if (_previousScore != _score || _score == 0)
-        {
-            Console.SetCursorPosition(2, 0);
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.Write($"Score: {_score}");
-        }
+        _ballX = _paddleX + PaddleWidth / 2;
+        _ballY = Height - PaddleHeight - BallSize - 1;
+        _ballDirToTop = true;
+    }
+    private void InitializePaddle()
+    {
+        _paddleX = Width / 2 - PaddleWidth / 2;
+    }
 
-    }
-    private void DrawLives()
-    {
-        if (_previousLives != _lives || _lives == InitialLives)
-        {
-            Console.SetCursorPosition(Width - 10, 0);
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.Write($"Lives: {_lives}");
-        }
-    }
+
     private void HandleInput()
     {
         if (Console.KeyAvailable)
@@ -252,29 +333,33 @@ public class ArkanoidGame
                 _keysPressed.Add(1);
                 _paddleX++;
             }
-            else if (keyInfo.Key == ConsoleKey.Escape)
+            else if (keyInfo.Key == ConsoleKey.S)
             {
                 SaveGame();
+            }
+            else if (keyInfo.Key == ConsoleKey.C)
+            {
+                _currentLevel++;
+                GenerateBlocks(_blocks, GetBlockPatternForLevel(_currentLevel));
+                DrawBlocks(_blocks);
+                InitializeBall();
+                InitializePaddle();
             }
         }
     }
     private void UpdateBall(Block[,] map)
     {
-        // Erase the previous ball position
         Console.SetCursorPosition(_ballX, _ballY);
         Console.Write(" ");
 
-        // Calculate the new ball position
         int newBallX = _ballX + (_ballDirToRight ? 1 : -1);
         int newBallY = _ballY + (_ballDirToTop ? -1 : 1);
 
-        // Check collision with the paddle
         if (newBallY == Height - PaddleHeight - BallSize && newBallX >= _paddleX && newBallX < _paddleX + PaddleWidth)
         {
             _ballDirToTop = true;
         }
 
-        // Check collision with the blocks
         if (newBallY >= 0 && newBallY < NumBlocksY * BlockHeight)
         {
             Block block = map[newBallX / BlockWidth, newBallY / BlockHeight];
@@ -283,13 +368,12 @@ public class ArkanoidGame
                 block.Destroyed = true;
                 _score++;
 
-                // Check if the block is the last one
-                if (_score == NumBlocksX * NumBlocksY)
+                if (IsLevelCompleted())
                 {
+                    RemoveBlocks(_blocks);
                     GameFinish(true);
                 }
 
-                // Change ball direction based on the side of collision
                 if (newBallX % BlockWidth == 0 || newBallX % BlockWidth == BlockWidth - 1)
                 {
                     _ballDirToRight = !_ballDirToRight;
@@ -301,7 +385,6 @@ public class ArkanoidGame
             }
         }
 
-        // Check collision with walls
         if (newBallX == 0 || newBallX == Width - 1)
         {
             _ballDirToRight = !_ballDirToRight;
@@ -311,15 +394,39 @@ public class ArkanoidGame
             _ballDirToTop = !_ballDirToTop;
         }
 
-        // Check if the ball falls below the paddle
         if (newBallY >= Height-1)
         {
             _lives--;
             if (_lives == 0)
             {
                 GameFinish(false);
+                _gameOver= true;
+                /*
+                Console.SetCursorPosition(0, Height - 1);
+                Console.WriteLine("Replay level again?... (Y/N)");
+                if (Console.ReadLine() == "Y" || Console.ReadLine() == "y")
+                {
+                    _lives = InitialLives;
+                    _score = 0;
+                    _gameOver = false;
+
+
+                    Countdown();
+                    GenerateBlocks(_blocks, GetBlockPatternForLevel(_currentLevel));
+                    DrawBlocks(_blocks);
+                    InitializePaddle();
+                    InitializeBall();
+                }
+                else
+                {
+                    _gameOver = true;
+                }*/
+                
             }
-            BallFall(_ballX, _ballY);
+            else
+            {
+                BallFall(_ballX, _ballY);
+            }
             InitializeBall();
         }
         else
@@ -333,40 +440,57 @@ public class ArkanoidGame
 
 
     }
-    private bool CheckCollision(int x, int y, int width, int height, ref int dx, ref int dy)
+
+    private void GameFinish(bool win)
     {
-        int ballCenterX = _ballX + BallSize / 2;
-        int ballCenterY = _ballY + BallSize / 2;
-        int blockCenterX = x + width / 2;
-        int blockCenterY = y + height / 2;
+        DrawHud();
 
-        int deltaX = Math.Abs(ballCenterX - blockCenterX);
-        int deltaY = Math.Abs(ballCenterY - blockCenterY);
-
-        if (deltaX > (BallSize + width) / 2 || deltaY > (BallSize + height) / 2)
+        string[] _resultOver = new string[] { };
+        if (win)
         {
-            return false;
+            _resultOver = new string[]
+            {
+            "                                                      ",
+            "  __     __          __          _______ _   _   _   ",
+            "  \\ \\   / /          \\ \\        / /_   _| \\ | | | |  ",
+            "   \\ \\_/ /__  _   _   \\ \\  /\\  / /  | | |  \\| | | |  ",
+            "    \\   / _ \\| | | |   \\ \\/  \\/ /   | | | . ` | | |  ",
+            "     | | (_) | |_| |    \\  /\\  /   _| |_| |\\  | |_|  ",
+            "     |_|\\___/ \\__,_|     \\/  \\/   |_____|_| \\_| (_)  ",
+            "                                                      ",
+            "                                                      "
+            };
+        }
+        else
+        {
+            BallFall(_ballX, _ballY);
+
+            _resultOver = new string[]
+            {
+                "                                                      ",
+                "   _____                         ____                 ",
+                "  / ____|                       / __ \\                ",
+                " | |  __  __ _ _ __ ___   ___  | |  | |_   _____ _ __ ",
+                " | | |_ |/ _` | '_ ` _ \\ / _ \\ | |  | \\ \\ / / _ \\ '__|",
+                " | |__| | (_| | | | | | |  __/ | |__| |\\ V /  __/ |   ",
+                "  \\_____|\\__,_|_| |_| |_|\\___|  \\____/  \\_/ \\___|_|   ",
+                "                                                      ",
+                "  score:" + _score + "                                             ",
+                "                                                      "
+            };
         }
 
-        if (deltaX <= width / 2 || deltaY <= height / 2)
+        Console.ForegroundColor = ConsoleColor.White;
+        for (int i = 0; i < _resultOver.Length; i++)
         {
-            dy = -dy;
-            return true;
+            Console.SetCursorPosition(Console.WindowWidth / 2 - 27, Console.WindowHeight / 2 - 4 + i);
+            Console.WriteLine(_resultOver[i]);
+            Thread.Sleep(100);
         }
 
-        int cornerDeltaX = deltaX - width / 2;
-        int cornerDeltaY = deltaY - height / 2;
-        int cornerDeltaXSquared = cornerDeltaX * cornerDeltaX;
-        int cornerDeltaYSquared = cornerDeltaY * cornerDeltaY;
-        int cornerDistanceSquared = cornerDeltaXSquared + cornerDeltaYSquared;
-        if (cornerDistanceSquared <= (BallSize / 2) * (BallSize / 2))
-        {
-            dx = -dx;
-            dy = -dy;
-            return true;
-        }
+        Thread.Sleep(1000);
 
-        return false;
+        Console.Clear();
     }
     private void BallFall(int drawX, int drawY)
     {
@@ -383,70 +507,94 @@ public class ArkanoidGame
         Console.SetCursorPosition(drawX, drawY);
         Console.Write(" ");
     }
-    private void GameFinish(bool win)
+    private void Countdown()
     {
-        _gameOver= true;
-        string[] _resultOver = new string[] { };
-        if (win)
-        {
-            _resultOver = new string[]
-            {
-            "                                                      ",
-            "  __     __          __          _______ _   _   _   ",
-            "  \\ \\   / /          \\ \\        / /_   _| \\ | | | |  ",
-            "   \\ \\_/ /__  _   _   \\ \\  /\\  / /  | | |  \\| | | |  ",
-            "    \\   / _ \\| | | |   \\ \\/  \\/ /   | | | . ` | | |  ",
-            "     | | (_) | |_| |    \\  /\\  /   _| |_| |\\  | |_|  ",
-            "     |_|\\___/ \\__,_|     \\/  \\/   |_____|_| \\_| (_)  ",
-            "                                                      ",
-            "  score:" + _score + "                                             ",
-            "                                                      "
-            };
-        }
-        else
-        {
-            _resultOver = new string[]
-            {
-                "                                                      ",
-                "   _____                         ____                 ",
-                "  / ____|                       / __ \\                ",
-                " | |  __  __ _ _ __ ___   ___  | |  | |_   _____ _ __ ",
-                " | | |_ |/ _` | '_ ` _ \\ / _ \\ | |  | \\ \\ / / _ \\ '__|",
-                " | |__| | (_| | | | | | |  __/ | |__| |\\ V /  __/ |   ",
-                "  \\_____|\\__,_|_| |_| |_|\\___|  \\____/  \\_/ \\___|_|   ",
-                "                                                      ",
-                "  score:" + _score + "                                             ",
-                "                                                      "
-            };
-        }
-
-
-        for (int i = 0; i < _resultOver.Length; i++)
-        {
-            Console.SetCursorPosition(Console.WindowWidth / 2 - 27, Console.WindowHeight / 2 - 4 + i);
-            Console.WriteLine(_resultOver[i]);
-            Thread.Sleep(100);
-        }
-        Thread.Sleep(1000);
-
         Console.Clear();
+
+        string[] countdown3 = new string[]
+        {
+        "  ____   ",
+        " |___ \\  ",
+        "   __) | ",
+        "  |__ <  ",
+        "  ___) | ",
+        " |____/ ",
+        "         "
+        };
+        string[] countdown2 = new string[]
+        {
+        "   ___   ",
+        "  |__ \\  ",
+        "     ) | ",
+        "    / /  ",
+        "   / /_  ",
+        "  |____| ",
+        "         "
+        };
+        string[] countdown1 = new string[]
+        {
+        "    __   ",
+        "   /_ |  ",
+        "    | |  ",
+        "    | |  ",
+        "    | |  ",
+        "    |_|  ",
+        "         "
+        };
+
+        for (int i = 3; i > 0; i--)
+        {
+            string[] countdownGo = new string[] { };
+            if (i == 3)
+            {
+                countdownGo = countdown3;
+                Console.ForegroundColor = ConsoleColor.Red;
+            }
+            if (i == 2)
+            {
+                countdownGo = countdown2;
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+            }
+            if (i == 1)
+            {
+                countdownGo = countdown1;
+                Console.ForegroundColor = ConsoleColor.Green;
+            }
+
+            for (int x = 0; x < countdownGo.Length; x++)
+            {
+                Console.SetCursorPosition(Console.WindowWidth / 2 - 5, Console.WindowHeight / 2 - 4 + x);
+                Console.WriteLine(countdownGo[x]);
+            }
+
+            Thread.Sleep(1000);
+            Console.Clear();
+
+        }
     }
-    private void InitializeBall()
+    private bool IsLevelCompleted()
     {
-        _ballX = _paddleX + PaddleWidth / 2;
-        _ballY = Height - PaddleHeight - BallSize - 1;
-        _ballDirToTop = true;
+        for (int y = 0; y < NumBlocksY; y++)
+        {
+            for (int x = 0; x < NumBlocksX; x++)
+            {
+                if (_blocks[x, y] != null && !_blocks[x, y].Destroyed)
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
-    public void StartNewGame()
-    {
-        GenerateBlocks(_blocks);
-    }
+
+
     public void SaveGame()
     {
         SaveData saveData = new SaveData
         {
             Score = _score,
-            MaxScore = _maxScore,
+            CurrentLevel = _currentLevel,
             Lives = _lives,
             BallX = _ballX,
             BallY = _ballY,
@@ -459,7 +607,7 @@ public class ArkanoidGame
         using (StreamWriter writer = new StreamWriter("game.sav"))
         {
             writer.WriteLine(saveData.Score);
-            writer.WriteLine(saveData.MaxScore);
+            writer.WriteLine(saveData.CurrentLevel);
             writer.WriteLine(saveData.Lives);
             writer.WriteLine(saveData.BallX);
             writer.WriteLine(saveData.BallY);
@@ -482,7 +630,7 @@ public class ArkanoidGame
         using (StreamReader reader = new StreamReader("game.sav"))
         {
             _score = int.Parse(reader.ReadLine());
-            _maxScore = int.Parse(reader.ReadLine());
+            _currentLevel= int.Parse(reader.ReadLine());
             _lives = int.Parse(reader.ReadLine());
             _ballX = int.Parse(reader.ReadLine());
             _ballY = int.Parse(reader.ReadLine());
@@ -513,12 +661,12 @@ public class ArkanoidGame
                 }
             }
         }
+        DrawBlocks(_blocks);
     }
-
     private struct SaveData
     {
         public int Score;
-        public int MaxScore;
+        public int CurrentLevel;
         public int Lives;
         public int BallX;
         public int BallY;
@@ -527,4 +675,6 @@ public class ArkanoidGame
         public int PaddleX;
         public Block[,] Blocks;
     }
+
 }
+

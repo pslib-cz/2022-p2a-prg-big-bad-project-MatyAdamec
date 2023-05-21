@@ -11,4 +11,5 @@ public class Block
     public int Y { get; set; }
     public ConsoleColor Color { get; set; }
     public bool Destroyed { get; set; }
+    public bool IsRemoved { get; set; }
 }

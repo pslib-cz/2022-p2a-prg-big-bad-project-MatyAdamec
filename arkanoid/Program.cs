@@ -11,6 +11,7 @@ class Program
 
         while (true)
         {
+            Console.ForegroundColor= ConsoleColor.White;
             Console.Clear();
             Console.WriteLine("1. Play new game");
             Console.WriteLine("2. Exit");
