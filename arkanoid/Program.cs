@@ -7,39 +7,42 @@ class Program
 {
     public static void Main()
     {
+        bool saveExists = File.Exists("game.sav");
+
         while (true)
         {
             Console.Clear();
-            Console.WriteLine("play: 1 \nexit: 2");
-            string output = Console.ReadLine(); 
+            Console.WriteLine("1. Play new game");
+            Console.WriteLine("2. Exit");
+
+            if (saveExists)
+            {
+                Console.WriteLine("3. Continue from save");
+            }
+
+            string output = Console.ReadLine();
             if (output == "1")
             {
-                Console.WriteLine("ok");
+                Console.WriteLine("OK");
 
                 ArkanoidGame game = new ArkanoidGame();
+                game.StartNewGame();
                 game.Run();
-
-            }else if (output == "2")
+            }
+            else if (output == "2")
             {
                 break;
             }
+            else if (output == "3" && saveExists)
+            {
+                ArkanoidGame game = new ArkanoidGame();
+                game.LoadGame();
+                game.Run();
+            }
             else
             {
-                Console.WriteLine("wrong input");
+                Console.WriteLine("Wrong input");
             }
         }
-
-
     }
 }
-
-/*
- TODO:
-    home screen
-    paddle modes
-    levels
-    win screen
-
- DONE:
-    draw paddle, lives, score, ball
- */
