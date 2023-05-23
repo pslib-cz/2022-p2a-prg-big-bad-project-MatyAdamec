@@ -15,7 +15,7 @@ public class ArkanoidGame
     private const int NumBlocksX = 10;
     private const int BlockWidth = Width / NumBlocksX;
     private const int BlockHeight = 2;
-    private const int NumBlocksY = 4;
+    private const int NumBlocksY = 16;
     private const int PaddleWidth = 18;
     private const int PaddleHeight = 1;
     private const int BallSize = 1;
@@ -35,8 +35,11 @@ public class ArkanoidGame
     private int _paddleX = Width / 2 - PaddleWidth / 2;
     private bool _gameOver = false;
 
-    private const int NumLevels = 5;
+    private const int NumLevels = 3;
     private int _currentLevel = 1;
+
+    private bool _paused = false;
+
 
 
     public ArkanoidGame()
@@ -57,40 +60,42 @@ public class ArkanoidGame
         int ballTime = 0;
         while (!_gameOver)
         {
-
-            if (ballTime % 3 == 0)
+            if (!_paused)
             {
-                UpdateBall(_blocks);
-            }
-
-
-            DrawHud();
-            RemoveBlocks(_blocks);
-            HandleInput();
-            DrawPaddle();
-            DrawBall();
-
-            
-            if (IsLevelCompleted())
-            {
-                _currentLevel++;
-                SaveGame();
-                if (_currentLevel == NumLevels)
+                if (ballTime % 3 == 0)
                 {
-                    _gameOver= true;
-                    break;
+                    UpdateBall(_blocks);
                 }
 
-                Countdown();
-                GenerateBlocks(_blocks, GetBlockPatternForLevel(_currentLevel));
-                DrawBlocks(_blocks);
-                InitializeBall();
-                InitializePaddle();
-            }
-            
 
-            Thread.Sleep(1);
-            ballTime++;
+                DrawHud();
+                RemoveBlocks(_blocks);
+                HandleInput();
+                DrawPaddle();
+                DrawBall();
+
+
+                if (IsLevelCompleted())
+                {
+                    _currentLevel++;
+                    SaveGame();
+                    if (_currentLevel == NumLevels)
+                    {
+                        _gameOver = true;
+                        break;
+                    }
+
+                    Countdown();
+                    GenerateBlocks(_blocks, GetBlockPatternForLevel(_currentLevel));
+                    DrawBlocks(_blocks);
+                    InitializeBall();
+                    InitializePaddle();
+                }
+
+
+                Thread.Sleep(1);
+                ballTime++;
+            }
         }
     }
 
@@ -114,18 +119,42 @@ public class ArkanoidGame
             case 1:
                 return new int[,]
                 {
-                    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-                    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-                    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-                    { 0, 1, 1, 1, 1, 0, 1, 1, 1, 0 }
+                    { 0, 1, 0, 1, 0, 1, 0, 1, 0, 1 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 1, 0, 1, 0, 1, 0, 1, 0, 1, 0 },
+                    { 0, 1, 0, 1, 0, 1, 0, 1, 0, 1 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 0, 1, 0, 1, 0, 1, 0, 1, 0, 1 },
+                    { 1, 0, 1, 0, 1, 0, 1, 0, 1, 0 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 0, 1, 0, 1, 0, 1, 0, 1, 0, 1 },
+                    { 1, 0, 1, 0, 1, 0, 1, 0, 1, 0 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 1, 0, 1, 0, 1, 0, 1, 0, 1, 0 },
+                    { 0, 1, 0, 1, 0, 1, 0, 1, 0, 1 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
                 };
             case 2:
                 return new int[,]
                 {
-                    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-                    { 0, 0, 1, 1, 1, 1, 1, 1, 0, 0 },
-                    { 0, 0, 0, 1, 1, 1, 1, 0, 0, 0 },
-                    { 1, 0, 0, 0, 1, 1, 0, 0, 0, 1 }
+                    { 1, 0, 0, 0, 1, 1, 0, 0, 0, 1 },
+                    { 1, 0, 0, 1, 0, 0, 1, 0, 0, 1 },
+                    { 0, 0, 0, 1, 0, 0, 1, 0, 0, 0 },
+                    { 0, 0, 1, 0, 1, 1, 0, 1, 0, 0 },
+                    { 0, 0, 1, 1, 0, 0, 1, 1, 0, 0 },
+                    { 0, 1, 0, 1, 0, 0, 1, 0, 1, 0 },
+                    { 0, 1, 0, 1, 0, 0, 1, 0, 1, 0 },
+                    { 0, 1, 0, 1, 0, 0, 1, 0, 1, 0 },
+                    { 0, 1, 0, 1, 0, 0, 1, 0, 1, 0 },
+                    { 0, 0, 1, 1, 0, 0, 1, 1, 0, 0 },
+                    { 0, 0, 1, 0, 1, 1, 0, 1, 0, 0 },
+                    { 0, 0, 0, 1, 0, 0, 1, 0, 0, 0 },
+                    { 0, 0, 0, 1, 0, 0, 1, 0, 0, 0 },
+                    { 0, 0, 0, 0, 1, 1, 0, 0, 0, 0 },
+                    { 0, 0, 0, 0, 1, 1, 0, 0, 0, 0 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
                 };
             case 3:
                 return new int[,]
@@ -133,23 +162,19 @@ public class ArkanoidGame
                     { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
                     { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
                     { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
                     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
-                };
-            case 4:
-                return new int[,]
-                {
-                    { 1, 0, 0, 1, 1, 1, 0, 0, 0, 1 },
-                    { 0, 0, 1, 1, 1, 1, 1, 0, 0, 0 },
-                    { 0, 0, 0, 1, 1, 1, 0, 0, 0, 0 },
-                    { 1, 0, 0, 0, 0, 0, 0, 0, 0, 1 }
-                };
-            case 5:
-                return new int[,]
-                {
-                    { 1, 0, 0, 1, 1, 1, 0, 0, 0, 1 },
-                    { 0, 1, 1, 0, 0, 0, 1, 1, 1, 0 },
-                    { 0, 1, 0, 1, 1, 1, 0, 1, 0, 0 },
-                    { 1, 0, 1, 0, 0, 0, 1, 0, 1, 1 }
                 };
             default:
                 return new int[NumBlocksX, NumBlocksY];
@@ -344,6 +369,14 @@ public class ArkanoidGame
                 DrawBlocks(_blocks);
                 InitializeBall();
                 InitializePaddle();
+            }
+            else if (keyInfo.Key == ConsoleKey.Escape)
+            {
+                if (!_paused)
+                {
+                    _paused = true;
+                    ShowPauseMenu();
+                }
             }
         }
     }
@@ -567,7 +600,7 @@ public class ArkanoidGame
                 Console.WriteLine(countdownGo[x]);
             }
 
-            Thread.Sleep(1000);
+            Thread.Sleep(100);
             Console.Clear();
 
         }
@@ -676,5 +709,48 @@ public class ArkanoidGame
         public Block[,] Blocks;
     }
 
-}
+    private void ShowPauseMenu()
+    {
+        Console.Clear();
+        Console.WriteLine("========== Pause Menu ==========");
+        Console.WriteLine("1. Save Game");
+        Console.WriteLine("2. Continue");
+        Console.WriteLine("3. Reload");
+        Console.WriteLine("4. Main Menu");
+        Console.WriteLine("================================");
 
+        bool validChoice = false;
+        while (!validChoice)
+        {
+            Console.Write("Enter your choice (1-4): ");
+            string input = Console.ReadLine();
+
+            switch (input)
+            {
+                case "1":
+                    SaveGame();
+                    break;
+                case "2":
+                    Console.Clear();
+                    DrawBlocks(_blocks);
+                    validChoice = true;
+                    break;
+                case "3":
+                    GenerateBlocks(_blocks, GetBlockPatternForLevel(_currentLevel));
+                    DrawBlocks(_blocks);
+                    InitializePaddle();
+                    InitializeBall();
+                    validChoice = true;
+                    break;
+                case "4":
+                    _gameOver = true;
+                    validChoice = true;
+                    break;
+                default:
+                    Console.WriteLine("Invalid choice. Please try again.");
+                    break;
+            }
+        }
+        _paused= false;
+    }
+}
