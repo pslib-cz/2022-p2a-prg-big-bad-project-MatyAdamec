@@ -1,8 +1,8 @@
 ﻿using System;
 using block;
-using Arkanoid;
+using arkanoid;
 
-namespace arkanoid;
+
 class Program
 {
     public static void Main()
@@ -12,6 +12,10 @@ class Program
         while (true)
         {
             Console.ForegroundColor= ConsoleColor.White;
+            Console.CursorVisible = false;
+            Console.SetWindowSize(ArkanoidGame.Width, ArkanoidGame.Height);
+            Console.SetBufferSize(ArkanoidGame.Width, ArkanoidGame.Height);
+            Console.Title = "Arkanoid";
             Console.Clear();
             Console.WriteLine("1. Play new game");
             Console.WriteLine("2. Exit");
@@ -43,6 +47,7 @@ class Program
             else
             {
                 Console.WriteLine("Wrong input");
+                Thread.Sleep(250);
             }
         }
     }

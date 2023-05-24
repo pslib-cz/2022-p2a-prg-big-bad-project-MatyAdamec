@@ -1,4 +1,5 @@
 ﻿using block;
+using bullet;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -7,11 +8,11 @@ using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Arkanoid;
+namespace arkanoid;
 public class ArkanoidGame
 {
-    private const int Width = 120;
-    private const int Height = 48;
+    public const int Width = 120;
+    public const int Height = 48;
     private const int NumBlocksX = 10;
     private const int BlockWidth = Width / NumBlocksX;
     private const int BlockHeight = 2;
@@ -40,6 +41,13 @@ public class ArkanoidGame
 
     private bool _paused = false;
 
+    private DateTime _lastBulletTime;
+    private bool _canShootBullet = true;
+    private List<Bullet> _bullets = new List<Bullet>();
+
+    private GunType _currentGunType = GunType.Glock;
+    private int _currentGunMaxBlocks = 1;
+    private TimeSpan _currentGunReloadTime = TimeSpan.FromSeconds(1);
 
 
     public ArkanoidGame()
@@ -48,7 +56,6 @@ public class ArkanoidGame
         Console.CursorVisible = false;
         Console.SetWindowSize(Width, Height);
         Console.SetBufferSize(Width, Height);
-        Console.Title = "Arkanoid";
 
         Console.Clear();
         StartNewLevel();
@@ -58,43 +65,44 @@ public class ArkanoidGame
     {
 
         int ballTime = 0;
+        int bulletTime = 0;
         while (!_gameOver)
         {
             if (!_paused)
             {
-                if (ballTime % 3 == 0)
+                if (ballTime % 30 == 0)
                 {
                     UpdateBall(_blocks);
                 }
+                if (bulletTime % 5 == 0)
+                {
+                    UpdateBullets();
+                }
 
-
+                DrawBullets();
                 DrawHud();
                 RemoveBlocks(_blocks);
                 HandleInput();
-                DrawPaddle();
-                DrawBall();
-
+                DrawPaddleAndBall();
 
                 if (IsLevelCompleted())
                 {
+
+                    GameFinish(true);
                     _currentLevel++;
-                    SaveGame();
-                    if (_currentLevel == NumLevels)
+                    if (_currentLevel >= NumLevels-1)
                     {
                         _gameOver = true;
                         break;
                     }
 
-                    Countdown();
-                    GenerateBlocks(_blocks, GetBlockPatternForLevel(_currentLevel));
-                    DrawBlocks(_blocks);
-                    InitializeBall();
-                    InitializePaddle();
+                    StartNewLevel();
                 }
 
 
                 Thread.Sleep(1);
                 ballTime++;
+                bulletTime++;
             }
         }
     }
@@ -105,11 +113,13 @@ public class ArkanoidGame
     }
     private void StartNewLevel()
     {
+        _lives = InitialLives;
+        _score = 0;
         Countdown();
         GenerateBlocks(_blocks, GetBlockPatternForLevel(_currentLevel));
         DrawBlocks(_blocks);
+        _paddleX = Width / 2 - PaddleWidth / 2;
         InitializeBall();
-        InitializePaddle();
     }
 
     private int[,] GetBlockPatternForLevel(int level)
@@ -177,7 +187,7 @@ public class ArkanoidGame
                     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
                 };
             default:
-                return new int[NumBlocksX, NumBlocksY];
+                return new int[NumBlocksY, NumBlocksX];
         }
     }
     private void GenerateBlocks(Block[,] map, int[,] blockPattern)
@@ -278,7 +288,7 @@ public class ArkanoidGame
             }
         }
     }
-    private void DrawPaddle()
+    private void DrawPaddleAndBall()
     {
         Console.ForegroundColor = ConsoleColor.White;
 
@@ -305,9 +315,7 @@ public class ArkanoidGame
             Console.SetCursorPosition(x, Height - PaddleHeight);
             Console.Write(" ");
         }
-    }
-    private void DrawBall()
-    {
+
         Console.ForegroundColor = ConsoleColor.Red;
 
         for (int i = 0; i < BallSize; i++)
@@ -336,10 +344,6 @@ public class ArkanoidGame
         _ballY = Height - PaddleHeight - BallSize - 1;
         _ballDirToTop = true;
     }
-    private void InitializePaddle()
-    {
-        _paddleX = Width / 2 - PaddleWidth / 2;
-    }
 
 
     private void HandleInput()
@@ -367,8 +371,8 @@ public class ArkanoidGame
                 _currentLevel++;
                 GenerateBlocks(_blocks, GetBlockPatternForLevel(_currentLevel));
                 DrawBlocks(_blocks);
+                _paddleX = Width / 2 - PaddleWidth / 2;
                 InitializeBall();
-                InitializePaddle();
             }
             else if (keyInfo.Key == ConsoleKey.Escape)
             {
@@ -377,6 +381,23 @@ public class ArkanoidGame
                     _paused = true;
                     ShowPauseMenu();
                 }
+            }
+
+            else if (keyInfo.Key == ConsoleKey.Spacebar)
+            {
+                ShootBullet();
+            }
+            else if (keyInfo.Key == ConsoleKey.K)
+            {
+                SwitchGunType(GunType.Sniper);
+            }
+            else if (keyInfo.Key == ConsoleKey.J)
+            {
+                SwitchGunType(GunType.Glock);
+            }
+            else if (keyInfo.Key == ConsoleKey.L)
+            {
+                SwitchGunType(GunType.AK47);
             }
         }
     }
@@ -401,11 +422,6 @@ public class ArkanoidGame
                 block.Destroyed = true;
                 _score++;
 
-                if (IsLevelCompleted())
-                {
-                    RemoveBlocks(_blocks);
-                    GameFinish(true);
-                }
 
                 if (newBallX % BlockWidth == 0 || newBallX % BlockWidth == BlockWidth - 1)
                 {
@@ -433,27 +449,19 @@ public class ArkanoidGame
             if (_lives == 0)
             {
                 GameFinish(false);
-                _gameOver= true;
-                /*
-                Console.SetCursorPosition(0, Height - 1);
+                
+                Console.SetCursorPosition(0, 1);
                 Console.WriteLine("Replay level again?... (Y/N)");
                 if (Console.ReadLine() == "Y" || Console.ReadLine() == "y")
                 {
-                    _lives = InitialLives;
-                    _score = 0;
+
                     _gameOver = false;
-
-
-                    Countdown();
-                    GenerateBlocks(_blocks, GetBlockPatternForLevel(_currentLevel));
-                    DrawBlocks(_blocks);
-                    InitializePaddle();
-                    InitializeBall();
+                    StartNewLevel();
                 }
                 else
                 {
                     _gameOver = true;
-                }*/
+                }
                 
             }
             else
@@ -476,8 +484,8 @@ public class ArkanoidGame
 
     private void GameFinish(bool win)
     {
+        RemoveBlocks(_blocks);
         DrawHud();
-
         string[] _resultOver = new string[] { };
         if (win)
         {
@@ -626,6 +634,13 @@ public class ArkanoidGame
     {
         SaveData saveData = new SaveData
         {
+            LastBulletTime = _lastBulletTime,
+            CanShootBullet = _canShootBullet,
+            Bullets = _bullets,
+            CurrentGunType = _currentGunType,
+            CurrentGunMaxBlocks = _currentGunMaxBlocks,
+            CurrentGunReloadTime = _currentGunReloadTime,
+
             Score = _score,
             CurrentLevel = _currentLevel,
             Lives = _lives,
@@ -639,6 +654,12 @@ public class ArkanoidGame
 
         using (StreamWriter writer = new StreamWriter("game.sav"))
         {
+            writer.WriteLine(saveData.LastBulletTime);
+            writer.WriteLine(saveData.CanShootBullet);
+            writer.WriteLine(saveData.CurrentGunType);
+            writer.WriteLine(saveData.CurrentGunMaxBlocks);
+            writer.WriteLine(saveData.CurrentGunReloadTime);
+
             writer.WriteLine(saveData.Score);
             writer.WriteLine(saveData.CurrentLevel);
             writer.WriteLine(saveData.Lives);
@@ -648,6 +669,11 @@ public class ArkanoidGame
             writer.WriteLine(saveData.BallDirToTop);
             writer.WriteLine(saveData.PaddleX);
 
+            foreach (Bullet bullet in saveData.Bullets)
+            {
+                writer.Write($"{bullet.X},{bullet.Y},{bullet.GunType},{bullet.MaxBlocks}|");
+            }
+            writer.WriteLine();
             for (int y = 0; y < NumBlocksY; y++)
             {
                 for (int x = 0; x < NumBlocksX; x++)
@@ -662,6 +688,13 @@ public class ArkanoidGame
     {
         using (StreamReader reader = new StreamReader("game.sav"))
         {
+
+            _lastBulletTime = DateTime.Parse(reader.ReadLine());
+            _canShootBullet = bool.Parse(reader.ReadLine());
+            _currentGunType = (GunType)Enum.Parse(typeof(GunType), reader.ReadLine());
+            _currentGunMaxBlocks = int.Parse(reader.ReadLine());
+            _currentGunReloadTime = TimeSpan.Parse(reader.ReadLine());
+
             _score = int.Parse(reader.ReadLine());
             _currentLevel= int.Parse(reader.ReadLine());
             _lives = int.Parse(reader.ReadLine());
@@ -671,6 +704,20 @@ public class ArkanoidGame
             _ballDirToTop = bool.Parse(reader.ReadLine());
             _paddleX = int.Parse(reader.ReadLine());
 
+            _bullets = new List<Bullet>();
+            foreach (string bulletString in reader.ReadLine().Split('|'))
+            {
+                if (bulletString != string.Empty)
+                {
+                    string[] bulletParams = bulletString.Split(',');
+                    int x = int.Parse(bulletParams[0]);
+                    int y = int.Parse(bulletParams[1]);
+                    GunType gunType = (GunType)Enum.Parse(typeof(GunType), bulletParams[2]);
+                    int maxBlocks = int.Parse(bulletParams[3]);
+                    Bullet bullet = new Bullet(x, y, gunType, maxBlocks);
+                    _bullets.Add(bullet);
+                }
+            }
             for (int y = 0; y < NumBlocksY; y++)
             {
                 for (int x = 0; x < NumBlocksX; x++)
@@ -698,6 +745,13 @@ public class ArkanoidGame
     }
     private struct SaveData
     {
+        public DateTime LastBulletTime;
+        public bool CanShootBullet;
+        public List<Bullet> Bullets;
+        public GunType CurrentGunType;
+        public int CurrentGunMaxBlocks;
+        public TimeSpan CurrentGunReloadTime;
+
         public int Score;
         public int CurrentLevel;
         public int Lives;
@@ -712,12 +766,23 @@ public class ArkanoidGame
     private void ShowPauseMenu()
     {
         Console.Clear();
-        Console.WriteLine("========== Pause Menu ==========");
-        Console.WriteLine("1. Save Game");
-        Console.WriteLine("2. Continue");
-        Console.WriteLine("3. Reload");
-        Console.WriteLine("4. Main Menu");
-        Console.WriteLine("================================");
+        Console.Write(
+            "|==============================|   _____                       __  __                   |==============================|\n" +
+            "|==============================|  |  __ \\                     |  \\/  |                  |==============================|\n" +
+            "|==============================|  | |__) |_ _ _   _ ___  ___  | \\  / | ___ _ __  _   _  |==============================|\n" +
+            "|==============================|  |  ___/ _` | | | / __|/ _ \\ | |\\/| |/ _ \\ '_ \\| | | | |==============================|\n" +
+            "|==============================|  | |  | (_| | |_| \\__ \\  __/ | |  | |  __/ | | | |_| | |==============================|\n" +
+            "|==============================|  |_|   \\__,_|\\__,_|___/\\___| |_|  |_|\\___|_| |_|\\__,_| |==============================|\n" +
+            "|==============================|________________________________________________________|==============================|\n" +
+            "|======================================================================================================================|" +
+
+
+            "========== Pause Menu ========== \n" +
+            "1. Save Game \n" +
+            "2. Continue \n" +
+            "3. Reload \n" +
+            "4. Main Menu \n" +
+            "================================ \n"); ;
 
         bool validChoice = false;
         while (!validChoice)
@@ -736,10 +801,7 @@ public class ArkanoidGame
                     validChoice = true;
                     break;
                 case "3":
-                    GenerateBlocks(_blocks, GetBlockPatternForLevel(_currentLevel));
-                    DrawBlocks(_blocks);
-                    InitializePaddle();
-                    InitializeBall();
+                    StartNewLevel();
                     validChoice = true;
                     break;
                 case "4":
@@ -752,5 +814,106 @@ public class ArkanoidGame
             }
         }
         _paused= false;
+    }
+
+    private void ShootBullet()
+    {
+        if (DateTime.Now - _lastBulletTime >= _currentGunReloadTime)
+        {
+            _lastBulletTime = DateTime.Now;
+            _canShootBullet = false;
+
+            Bullet bullet = new Bullet(_paddleX + PaddleWidth / 2, Console.WindowHeight - 2, _currentGunType, _currentGunMaxBlocks);
+            _bullets.Add(bullet);
+
+        }
+    }
+    private void UpdateBullets()
+    {
+    
+        for (int i = _bullets.Count - 1; i >= 0; i--)
+        {
+            Bullet bullet = _bullets[i];
+            bullet.MoveUp();
+
+            if (bullet.Y < 0)
+            {
+                _bullets.RemoveAt(i);
+                Console.SetCursorPosition(bullet.X, bullet.Y + 1);
+                Console.Write(" ");
+                _canShootBullet = true;
+                continue;
+            }
+
+            int blockX = bullet.X / BlockWidth;
+            int blockY = bullet.Y / BlockHeight;
+
+            if (blockY >= 0 && blockY < NumBlocksY && blockX >= 0 && blockX < NumBlocksX)
+            {
+                Block block = _blocks[blockX, blockY];
+                if (block != null && !block.Destroyed)
+                {
+                    block.Destroyed = true;
+                    bullet.MaxBlocks -= 1;
+
+                    if (bullet.MaxBlocks <= 0)
+                    {
+                        Console.SetCursorPosition(bullet.X, bullet.Y + 1);
+                        Console.Write(" ");
+                        _bullets.RemoveAt(i);
+                    }
+                    
+
+                }
+            }
+        }
+    
+    }
+    private void DrawBullets()
+    {
+        foreach (Bullet bullet in _bullets)
+        {
+            if (bullet.GunType == GunType.Glock)
+            {
+                Console.ForegroundColor= ConsoleColor.Green;
+            }
+            else if (bullet.GunType == GunType.Sniper)
+            {
+                Console.ForegroundColor = ConsoleColor.Blue;
+            }
+            else if (bullet.GunType == GunType.AK47)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkMagenta;
+            }
+            bullet.Draw();
+        }
+
+        double countdown = Math.Max(0, _currentGunReloadTime.TotalSeconds - (DateTime.Now - _lastBulletTime).TotalSeconds);
+
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.SetCursorPosition(Console.WindowWidth - 7 - _currentGunType.ToString().Length, Console.WindowHeight - 2);
+        Console.Write("  " + _currentGunType + " " + countdown.ToString("F1"));
+    }
+    private void SwitchGunType(GunType gunType)
+    {
+        _currentGunType = gunType;
+
+        switch (_currentGunType)
+        {
+            case GunType.Glock:
+                _currentGunMaxBlocks = 1;
+                _currentGunReloadTime = TimeSpan.FromSeconds(1);
+                break;
+
+            case GunType.Sniper:
+                _currentGunMaxBlocks = 2;
+                _currentGunReloadTime = TimeSpan.FromSeconds(3);
+                break;
+
+            case GunType.AK47:
+                _currentGunMaxBlocks = 1;
+                _currentGunReloadTime = TimeSpan.FromSeconds(0.2);
+                break;
+        }
     }
 }
