@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace arkanoid;
 public class ArkanoidGame
@@ -22,6 +23,22 @@ public class ArkanoidGame
     private const int BallSize = 1;
     private const int InitialLives = 1;
 
+    /*
+     Welcome!
+     Welcome to my Arkanoid game!
+     Your goal is to destroy all the blocks on the screen by hitting them with the ball.
+        You have score that increases when you destroy a block. Your score will be reset after each level.
+     You control the paddle at the bottom of the screen. You can move it left and right using the arrow keys (<- , ->). 
+        In case you miss the ball and the ball leaves playing field, you lose a life.
+     
+     You can also shoot bullets by pressing the space bar. 
+     The bullets will destroy the blocks they hit. 
+     You can change the type of the gun by pressing the number keys 1, 2 and 3. 
+     The gun types are:
+        Glock - one bullet can destroy 1 block and has a reload time of 1 second.
+        Sniper - one bullet can destroy 2 blocks and has a reload time of 2 seconds.
+        AK47 - one bullet can destroy 1 block and has a reload time of 3 seconds.
+     */
 
     private readonly Random _random = new Random();
     private readonly Block[,] _blocks = new Block[NumBlocksX, NumBlocksY];
@@ -38,6 +55,7 @@ public class ArkanoidGame
 
     private const int NumLevels = 3;
     private int _currentLevel = 1;
+    private int _autosave = 1;
 
     private bool _paused = false;
 
@@ -70,7 +88,7 @@ public class ArkanoidGame
         {
             if (!_paused)
             {
-                if (ballTime % 30 == 0)
+                if (ballTime % 3 == 0)
                 {
                     UpdateBall(_blocks);
                 }
@@ -113,6 +131,7 @@ public class ArkanoidGame
     }
     private void StartNewLevel()
     {
+        _currentGunType = GunType.Glock;
         _lives = InitialLives;
         _score = 0;
         Countdown();
@@ -364,7 +383,7 @@ public class ArkanoidGame
             }
             else if (keyInfo.Key == ConsoleKey.S)
             {
-                SaveGame();
+                SaveGame(_autosave);
             }
             else if (keyInfo.Key == ConsoleKey.C)
             {
@@ -387,15 +406,15 @@ public class ArkanoidGame
             {
                 ShootBullet();
             }
-            else if (keyInfo.Key == ConsoleKey.K)
+            else if (keyInfo.Key == ConsoleKey.NumPad2)
             {
                 SwitchGunType(GunType.Sniper);
             }
-            else if (keyInfo.Key == ConsoleKey.J)
+            else if (keyInfo.Key == ConsoleKey.NumPad1)
             {
                 SwitchGunType(GunType.Glock);
             }
-            else if (keyInfo.Key == ConsoleKey.L)
+            else if (keyInfo.Key == ConsoleKey.NumPad3)
             {
                 SwitchGunType(GunType.AK47);
             }
@@ -450,12 +469,13 @@ public class ArkanoidGame
             {
                 GameFinish(false);
                 
-                Console.SetCursorPosition(0, 1);
-                Console.WriteLine("Replay level again?... (Y/N)");
-                if (Console.ReadLine() == "Y" || Console.ReadLine() == "y")
+                Console.ForegroundColor= ConsoleColor.Red;
+                Console.SetCursorPosition(46, 24);
+                Console.Write("Replay level again?... (Y/N)");
+                Console.SetCursorPosition(60, 25);
+                string output = Console.ReadLine();
+                if (output.Trim() == "Y" || output.Trim() == "y")
                 {
-
-                    _gameOver = false;
                     StartNewLevel();
                 }
                 else
@@ -630,7 +650,7 @@ public class ArkanoidGame
     }
 
 
-    public void SaveGame()
+    public void SaveGame(int save)
     {
         SaveData saveData = new SaveData
         {
@@ -651,8 +671,22 @@ public class ArkanoidGame
             PaddleX = _paddleX,
             Blocks = _blocks
         };
-
-        using (StreamWriter writer = new StreamWriter("game.sav"))
+        string savepath = "";
+        switch (save)
+        {
+            case 0:
+                savepath = "save_0.sav";
+                break;
+            case 1:
+                savepath = "save_1.sav";
+                break;
+            case 2:
+                savepath = "save_2.sav";
+                break;
+            default:
+                break;
+        }
+        using (StreamWriter writer = new StreamWriter(savepath))
         {
             writer.WriteLine(saveData.LastBulletTime);
             writer.WriteLine(saveData.CanShootBullet);
@@ -684,9 +718,9 @@ public class ArkanoidGame
             }
         }
     }
-    public void LoadGame()
+    public void LoadGame(string loadpath)
     {
-        using (StreamReader reader = new StreamReader("game.sav"))
+        using (StreamReader reader = new StreamReader(loadpath))
         {
 
             _lastBulletTime = DateTime.Parse(reader.ReadLine());
@@ -765,51 +799,208 @@ public class ArkanoidGame
 
     private void ShowPauseMenu()
     {
-        Console.Clear();
-        Console.Write(
-            "|==============================|   _____                       __  __                   |==============================|\n" +
-            "|==============================|  |  __ \\                     |  \\/  |                  |==============================|\n" +
-            "|==============================|  | |__) |_ _ _   _ ___  ___  | \\  / | ___ _ __  _   _  |==============================|\n" +
-            "|==============================|  |  ___/ _` | | | / __|/ _ \\ | |\\/| |/ _ \\ '_ \\| | | | |==============================|\n" +
-            "|==============================|  | |  | (_| | |_| \\__ \\  __/ | |  | |  __/ | | | |_| | |==============================|\n" +
-            "|==============================|  |_|   \\__,_|\\__,_|___/\\___| |_|  |_|\\___|_| |_|\\__,_| |==============================|\n" +
-            "|==============================|________________________________________________________|==============================|\n" +
-            "|======================================================================================================================|" +
-
-
-            "========== Pause Menu ========== \n" +
-            "1. Save Game \n" +
-            "2. Continue \n" +
-            "3. Reload \n" +
-            "4. Main Menu \n" +
-            "================================ \n"); ;
 
         bool validChoice = false;
         while (!validChoice)
         {
-            Console.Write("Enter your choice (1-4): ");
+            Console.Clear();
+            Console.ForegroundColor= ConsoleColor.White;
+            Console.SetCursorPosition(0, 0);
+            Console.Write(
+                "                               |   _____                       __  __                   |\n" +
+                "                               |  |  __ \\                     |  \\/  |                  |\n" +
+                "                               |  | |__) |_ _ _   _ ___  ___  | \\  / | ___ _ __  _   _  |\n" +
+                "                               |  |  ___/ _` | | | / __|/ _ \\ | |\\/| |/ _ \\ '_ \\| | | | |\n" +
+                "                               |  | |  | (_| | |_| \\__ \\  __/ | |  | |  __/ | | | |_| | |\n" +
+                "                               |  |_|   \\__,_|\\__,_|___/\\___| |_|  |_|\\___|_| |_|\\__,_| |\n" +
+                "                               |________________________________________________________|\n" +
+                "\n" +
+                "\n" +
+                "\n" +
+                "\n" +
+                "                                               ########################\n" +
+                "                                               #                      #\n" +
+                "                                               #     1. Continue      #\n" +
+                "                                               #                      #\n" +
+                "                                               ########################\n" +
+                "\n" +
+                "\n" +
+                "\n" +
+                "                                               ########################\n" +
+                "                                               #                      #\n" +
+                "                                               #      2. Reload       #\n" +
+                "                                               #                      #\n" +
+                "                                               ########################\n" +
+                "\n" +
+                "\n" +
+                "\n" +
+                "                                               ########################\n" +
+                "                                               #                      #\n" +
+                "                                               #     3. Save Game     #\n" +
+                "                                               #                      #\n" +
+                "                                               ########################\n" +
+                "\n" +
+                "\n" +
+                "\n" +
+                "                                               ########################\n" +
+                "                                               #                      #\n" +
+                "                                               #     4. Main Menu     #\n" +
+                "                                               #                      #\n" +
+                "                                               ########################");
+            Console.ForegroundColor= ConsoleColor.Green;
+            Console.SetCursorPosition(49, 42);
+            Console.Write("Your choice (1-4): ");
+
             string input = Console.ReadLine();
 
             switch (input)
             {
                 case "1":
-                    SaveGame();
-                    break;
-                case "2":
                     Console.Clear();
                     DrawBlocks(_blocks);
                     validChoice = true;
                     break;
-                case "3":
+
+                case "2":
                     StartNewLevel();
                     validChoice = true;
                     break;
+
+                case "3":
+                    while (true)
+                    {
+                        Console.Clear();
+                        Console.ForegroundColor= ConsoleColor.Red;
+                        Console.Write("<< Back (B/b)");
+                        Console.ForegroundColor= ConsoleColor.White;
+                        Console.Write(
+                            "                 |    _____                    _____                        |\n" +
+                            "                              |   / ____|                  / ____|                       |\n" +
+                            "                              |  | (___   __ ___   _____  | |  __  __ _ _ __ ___   ___   |\n" +
+                            "                              |   \\___ \\ / _` \\ \\ / / _ \\ | | |_ |/ _` | '_ ` _ \\ / _ \\  |\n" +
+                            "                              |   ____) | (_| |\\ V /  __/ | |__| | (_| | | | | | |  __/  |\n" +
+                            "                              |  |_____/ \\__,_| \\_/ \\___|  \\_____|\\__,_|_| |_| |_|\\___|  |\n" +
+                            "                              |__________________________________________________________|\n\n\n\n\n"
+                            );
+                        for (int i = 0; i <= 2; i++)
+                        {
+                            string saveFileName = $"save_{i}.sav";
+                            if (File.Exists(saveFileName))
+                            {
+                                using (StreamReader reader = new StreamReader(saveFileName))
+                                {
+                                    for (int j = 0; j < 5; j++)
+                                    {
+                                        reader.ReadLine();
+                                    }
+
+                                    string scoreLine = reader.ReadLine();
+                                    int score;
+                                    if (int.TryParse(scoreLine, out score))
+                                    {
+                                        string levelLine = reader.ReadLine();
+                                        int level;
+                                        if (int.TryParse(levelLine, out level))
+                                        {
+                                            string isAutosave = "";
+                                            if (i == _autosave-1)
+                                            {
+                                                isAutosave = "                                           #     Auto Save / Fast Save     #\n";
+                                            }
+                                            Console.ForegroundColor = ConsoleColor.White;
+                                            Console.Write(
+                                                "                                           #################################\n" +
+                                                "                                           #                               #\n" +
+                                               $"                                           #             Save {i + 1}            #\n" +
+                                                "                                           #                               #\n" +
+                                               $"                                           #            Level: {level}           #\n" +
+                                               $"                                           #            Score: {score}           #\n"+ isAutosave +
+                                                "                                           #                               #\n" +
+                                                "                                           #################################\n\n\n");
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                string isAutosave = "";
+                                if (i == _autosave-1)
+                                {
+                                    isAutosave = "                                           #     Auto Save / Fast Save     #\n";
+                                }
+                                Console.ForegroundColor = ConsoleColor.Green;
+                                Console.Write(
+                                "                                           #################################\n" +
+                                "                                           #                               #\n" +
+                               $"                                           #             Save {i+1}            #\n" +
+                                "                                           #                               #\n" +
+                                "                                           #      File does not exist      #\n" + isAutosave +
+                                "                                           #                               #\n" +
+                                "                                           #################################\n\n\n");
+                            }
+                            
+                        }
+        
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.SetCursorPosition(45, 42);
+                        Console.Write("Choose spot to save (1-3): ");
+                        string saveIndexStr = Console.ReadLine();
+                        if (int.TryParse(saveIndexStr, out int saveIndex) && saveIndex >= 1 && saveIndex <= 3)
+                        {
+                            string saveFileName = $"save_{saveIndex - 1}.sav";
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            if (File.Exists(saveFileName))
+                            {
+                                Console.Write($"\n                          Save already exists in slot {saveIndex}. Do you want to overwrite? (y/n) : ");
+                                string overwriteChoiceInput = Console.ReadLine().ToLower();
+                                if (overwriteChoiceInput == "y")
+                                {
+                                    SaveGame(saveIndex - 1);
+                                    Console.ForegroundColor = ConsoleColor.Green;
+                                    Console.Write($"\n                                             Save overwritten in slot {saveIndex}.");
+                                    Thread.Sleep(250);
+                                    break;
+                                }
+                                else
+                                {
+                                    Console.Write("\n                                             Save operation cancelled.");
+                                    Thread.Sleep(250);
+                                }
+                            }
+                            else
+                            {
+                                SaveGame(saveIndex - 1);
+                                Console.ForegroundColor = ConsoleColor.Green;
+                                Console.Write($"\n                                           Game saved in slot {saveIndex}.");
+                                Thread.Sleep(250);
+                                break;
+
+                            }
+                        }
+
+                        else if (saveIndexStr == "B" || saveIndexStr == "b")
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            Console.ForegroundColor= ConsoleColor.Red;
+                            Console.WriteLine("\n                                                Invalid save index.");
+                            Thread.Sleep(250);
+                        }
+                    }
+                    break;
+
                 case "4":
                     _gameOver = true;
                     validChoice = true;
                     break;
+
                 default:
+                    Console.SetCursorPosition(43,45);
+                    Console.ForegroundColor= ConsoleColor.Red;
                     Console.WriteLine("Invalid choice. Please try again.");
+                    Thread.Sleep(250);
                     break;
             }
         }
@@ -855,7 +1046,7 @@ public class ArkanoidGame
                 {
                     block.Destroyed = true;
                     bullet.MaxBlocks -= 1;
-
+                    _score++;
                     if (bullet.MaxBlocks <= 0)
                     {
                         Console.SetCursorPosition(bullet.X, bullet.Y + 1);
