@@ -15,6 +15,8 @@ class Program
         Console.SetBufferSize(ArkanoidGame.Width, ArkanoidGame.Height);
         Console.Title = "Arkanoid";
         Console.CursorVisible = false;
+        _UIHandler.Tutorial(saveExists);
+
         while (true)
         {
             _UIHandler.MainMenu();

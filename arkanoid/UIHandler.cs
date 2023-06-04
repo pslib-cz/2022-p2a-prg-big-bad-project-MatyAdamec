@@ -21,7 +21,7 @@ public class UIHandler
         double countdown = Math.Max(0, GunReloadTime.TotalSeconds - (DateTime.Now - lastBulletTime).TotalSeconds);
 
         Console.ForegroundColor = ConsoleColor.White;
-        Console.SetCursorPosition(Console.WindowWidth - 7 - gunType.ToString().Length, Console.WindowHeight - 2);
+        Console.SetCursorPosition(width - 7 - gunType.ToString().Length, Console.WindowHeight - 2);
         Console.Write("  " + gunType + " " + countdown.ToString("F1"));
     }
 
@@ -520,5 +520,178 @@ public class UIHandler
         Console.SetCursorPosition(46, 24);
         Console.Write("Replay level again?... (Y/N)");
         Console.SetCursorPosition(60, 25);
+    }
+
+    public void Tutorial(bool notFirstTime)
+    {
+        if (!notFirstTime)
+        {
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.White;
+            string intro = "\n\n\n\n\n\n\n\n\n\n\n\n                                                        Welcome! \n                                                Welcome to my Arkanoid game! \n                  Your goal is to destroy all the blocks on the screen by hitting them with the ball.";
+            for (int i = 0; i < intro.Length; i++)
+            {
+                Console.Write(intro[i]);
+                if (intro[i] != ' ')
+                {
+                    Thread.Sleep(5);
+                }
+            }
+            Console.SetCursorPosition(92, 47);
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Thread.Sleep(1000);
+            Console.Write("Press any key to continue...");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.ReadKey();
+
+
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.SetCursorPosition(59, 45);
+            Console.Write("O");
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.SetCursorPosition(57, 36);
+            Console.Write(
+                ";;;;;\r\n" +
+                "                                                         ;;;;;\r\n" +
+                "                                                         ;;;;;\r\n" +
+                "                                                         ;;;;;\r\n" +
+                "                                                         ;;;;;\r\n" +
+                "                                                       ..;;;;;..\r\n" +
+                "                                                        ':::::'\r\n" +
+                "                                                          ':`\r\n");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.SetCursorPosition(51, 18);
+            Console.Write(
+                "This is your Ball... \n                   Your goal is to destroy all the blocks on the screen by hitting them with the ball.");
+            Console.SetCursorPosition(92, 47);
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("Press any key to continue...");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.ReadKey();
+
+
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.SetCursorPosition(51, 47);
+            Console.Write("██████████████████");
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.SetCursorPosition(57, 37);
+            Console.Write(
+                ";;;;;\r\n" +
+                "                                                         ;;;;;\r\n" +
+                "                                                         ;;;;;\r\n" +
+                "                                                         ;;;;;\r\n" +
+                "                                                         ;;;;;\r\n" +
+                "                                                       ..;;;;;..\r\n" +
+                "                                                        ':::::'\r\n" +
+                "                                                          ':`\r\n");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.SetCursorPosition(49, 18);
+            Console.Write(
+                "This is your Paddle... \n     You control the paddle at the bottom of the screen. You can move it left and right using the arrow keys (<- , ->). ");
+            Console.SetCursorPosition(92, 47);
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("Press any key to continue...");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.ReadKey();
+
+
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Write(" Score: X\n");
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write(
+                "\n        .\r\n" +
+                "      .:;:.\r\n" +
+                "    .:;;;;;:.\r\n" +
+                "      ;;;;;\r\n" +
+                "      ;;;;;\r\n" +
+                "      ;;;;;\r\n" +
+                "      ;;;;;\r\n" +
+                "      ;;;;;\r\n");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.SetCursorPosition(32, 23);
+            Console.Write(
+                "You have score that increases when you destroy a block. \n                                      Your score will be reset after each level. ");
+            Console.SetCursorPosition(92, 47);
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("Press any key to continue...");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.ReadKey();
+
+
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.SetCursorPosition(110, 0);
+            Console.Write(" Lives: X\n");
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write(
+                "\n                                                                                                                   .\r\n" +
+                "                                                                                                                 .:;:.\r\n" +
+                "                                                                                                               .:;;;;;:.\r\n" +
+                "                                                                                                                 ;;;;;\r\n" +
+                "                                                                                                                 ;;;;;\r\n" +
+                "                                                                                                                 ;;;;;\r\n" +
+                "                                                                                                                 ;;;;;\r\n" +
+                "                                                                                                                 ;;;;;\r\n");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.SetCursorPosition(30, 23);
+            Console.Write(
+                "You have a lives indicator that decreeses when your ball falls\n                                      Your lives will be reset after each level. ");
+            Console.SetCursorPosition(92, 47);
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("Press any key to continue...");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.ReadKey();
+
+
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.SetCursorPosition(108, Console.WindowHeight - 2);
+            Console.Write("GunType: X");
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.SetCursorPosition(0, 36);
+            Console.Write(
+                "                                                                                                                 ;;;;;\r\n" +
+                "                                                                                                                 ;;;;;\r\n" +
+                "                                                                                                                 ;;;;;\r\n" +
+                "                                                                                                                 ;;;;;\r\n" +
+                "                                                                                                                 ;;;;;\r\n" +
+                "                                                                                                               ..;;;;;..\r\n" +
+                "                                                                                                                ':::::'\r\n" +
+                "                                                                                                                  ':`\r\n");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.SetCursorPosition(0, 19);
+            Console.Write(
+                "                       You can shoot bullets by pressing the space bar. \n" +
+                "                       The bullets will destroy the blocks they hit. \n" +
+                "                       You can change the type of the gun by pressing the number keys 1, 2 and 3. \n" +
+                "                       The gun types are: \n" +
+                "\t                       Glock - one bullet can destroy 1 block and has a reload time of 1 second. \n" +
+                "\t                       Sniper - one bullet can destroy 2 blocks and has a reload time of 2 seconds. \n" +
+                "\t                       AK47 - one bullet can destroy 1 block and has a reload time of 3 seconds. \n" +
+                "");
+            Console.SetCursorPosition(92, 47);
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("Press any key to continue...");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.ReadKey();
+
+            Console.Clear();
+            Console.SetCursorPosition(45, 15);
+            Console.Write("To sum it up:\n\n" +
+                "                                             \t <- , -> : paddle movement\n" +
+                "                                             \t space bar : gun shot\n" +
+                "                                             \t S : Quick Save\n" +
+                "                                             \t escape : Pause Menu\n" +
+                "                                             \t num 1 : change the gun to Glock\n" +
+                "                                             \t num 2 : change the gun to Sniper\n" +
+                "                                             \t num 3 : change the gun to AK-47\n\n");
+
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("                                             Just for you ... to test \n                                              \t C : level ++");
+            Console.ReadKey();
+        }
     }
 }

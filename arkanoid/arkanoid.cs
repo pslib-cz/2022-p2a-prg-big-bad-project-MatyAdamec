@@ -24,23 +24,6 @@ public class ArkanoidGame
     private const int BallSize = 1;
     private const int InitialLives = 1;
 
-    /*
-     Welcome!
-     Welcome to my Arkanoid game!
-     Your goal is to destroy all the blocks on the screen by hitting them with the ball.
-        You have score that increases when you destroy a block. Your score will be reset after each level.
-     You control the paddle at the bottom of the screen. You can move it left and right using the arrow keys (<- , ->). 
-        In case you miss the ball and the ball leaves playing field, you lose a life.
-     
-     You can also shoot bullets by pressing the space bar. 
-     The bullets will destroy the blocks they hit. 
-     You can change the type of the gun by pressing the number keys 1, 2 and 3. 
-     The gun types are:
-        Glock - one bullet can destroy 1 block and has a reload time of 1 second.
-        Sniper - one bullet can destroy 2 blocks and has a reload time of 2 seconds.
-        AK47 - one bullet can destroy 1 block and has a reload time of 3 seconds.
-     */
-
     private readonly Random _random = new Random();
     private readonly Block[,] _blocks = new Block[NumBlocksX, NumBlocksY];
     private readonly List<int> _keysPressed = new List<int>();
@@ -130,6 +113,7 @@ public class ArkanoidGame
     public void StartNewGame()
     {
         GenerateBlocks(_blocks, GetBlockPatternForLevel(1));
+        SaveGame(0);
     }
     private void StartNewLevel()
     {
@@ -294,9 +278,10 @@ public class ArkanoidGame
             {
                 SaveGame(_autosave);
             }
-            else if (keyInfo.Key == ConsoleKey.C)
+            else if (keyInfo.Key == ConsoleKey.C && _currentLevel+1<=NumLevels)
             {
                 _currentLevel++;
+                Console.Clear();
                 GenerateBlocks(_blocks, GetBlockPatternForLevel(_currentLevel));
                 _UIHandler.DrawBlocks(_blocks, NumBlocksY, NumBlocksX, BlockHeight, BlockWidth);
                 _paddleX = Width / 2 - PaddleWidth / 2;
