@@ -1,5 +1,6 @@
 ﻿using block;
 using bullet;
+using ui_handler;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -66,7 +67,7 @@ public class ArkanoidGame
     private GunType _currentGunType = GunType.Glock;
     private int _currentGunMaxBlocks = 1;
     private TimeSpan _currentGunReloadTime = TimeSpan.FromSeconds(1);
-
+    private UIHandler _UIHandler;
 
     public ArkanoidGame()
     {
@@ -97,22 +98,23 @@ public class ArkanoidGame
                     UpdateBullets();
                 }
 
-                DrawBullets();
-                DrawHud();
-                RemoveBlocks(_blocks);
+                _UIHandler.DrawHud(_score, _lives, Width, _currentGunReloadTime, _lastBulletTime, _currentGunType);
+                _UIHandler.RemoveBlocks(_blocks, NumBlocksY, NumBlocksX, BlockHeight, BlockWidth);
+                _UIHandler.DrawPaddleAndBall(_paddleX, PaddleHeight, PaddleWidth, _ballX, _ballY, BallSize, Height, Width);
+                _UIHandler.DrawBullets(_bullets);
+
                 HandleInput();
-                DrawPaddleAndBall();
 
                 if (IsLevelCompleted())
                 {
 
-                    GameFinish(true);
-                    _currentLevel++;
-                    if (_currentLevel >= NumLevels-1)
+                    _UIHandler.GameFinish(true, _ballX, _ballY, _score);
+                    if (_currentLevel >= NumLevels)
                     {
                         _gameOver = true;
                         break;
                     }
+                    _currentLevel++;
 
                     StartNewLevel();
                 }
@@ -131,14 +133,31 @@ public class ArkanoidGame
     }
     private void StartNewLevel()
     {
-        _currentGunType = GunType.Glock;
+        _UIHandler = new UIHandler();
+        _bullets= new List<Bullet>();
+        SwitchGunType(GunType.Glock);
         _lives = InitialLives;
         _score = 0;
-        Countdown();
+        _UIHandler.Countdown();
         GenerateBlocks(_blocks, GetBlockPatternForLevel(_currentLevel));
-        DrawBlocks(_blocks);
+        _UIHandler.DrawBlocks(_blocks, NumBlocksY, NumBlocksX, BlockHeight, BlockWidth);
         _paddleX = Width / 2 - PaddleWidth / 2;
         InitializeBall();
+    }
+    private bool IsLevelCompleted()
+    {
+        for (int y = 0; y < NumBlocksY; y++)
+        {
+            for (int x = 0; x < NumBlocksX; x++)
+            {
+                if (_blocks[x, y] != null && !_blocks[x, y].Destroyed)
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     private int[,] GetBlockPatternForLevel(int level)
@@ -148,6 +167,7 @@ public class ArkanoidGame
             case 1:
                 return new int[,]
                 {
+                                        
                     { 0, 1, 0, 1, 0, 1, 0, 1, 0, 1 },
                     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
                     { 1, 0, 1, 0, 1, 0, 1, 0, 1, 0 },
@@ -233,8 +253,6 @@ public class ArkanoidGame
             }
         }
     }
-
-
     private bool HasAdjacentBlockWithSameColor(int x, int y, ConsoleColor color, Block[,] map)
     {
         if (x > 0 && map[x - 1, y] != null && map[x - 1, y].Color == color)
@@ -247,116 +265,7 @@ public class ArkanoidGame
             return true;
         return false;
     }
-    private void RemoveBlocks(Block[,] map)
-    {
-        for (int y = 0; y < NumBlocksY; y++)
-        {
-            for (int x = 0; x < NumBlocksX; x++)
-            {
-                if (map[x, y] != null)
-                {
-                    Block block = map[x, y];
-                    bool blockDestroyed = block.Destroyed;
 
-                    if (blockDestroyed && !block.IsRemoved)
-                    {
-                        for (int i = 0; i < BlockHeight; i++)
-                        {
-                            for (int j = 0; j < BlockWidth; j++)
-                            {
-                                int clearX = block.X + j;
-                                int clearY = block.Y + i;
-
-                                Console.SetCursorPosition(clearX, clearY);
-                                Console.Write(" ");
-                            }
-                        }
-
-                        block.IsRemoved = true;
-                    }
-                }
-            }
-        }
-    }
-    private void DrawBlocks(Block[,] map)
-    {
-        for (int y = 0; y < NumBlocksY; y++)
-        {
-            for (int x = 0; x < NumBlocksX; x++)
-            {
-                if (map[x, y] != null)
-                {
-                    Block block = map[x, y];
-                    bool blockDestroyed = block.Destroyed;
-
-                    Console.ForegroundColor = block.Color;
-
-                    for (int i = 0; i < BlockHeight; i++)
-                    {
-                        for (int j = 0; j < BlockWidth; j++)
-                        {
-                            int drawX = block.X + j;
-                            int drawY = block.Y + i;
-
-                            Console.SetCursorPosition(drawX, drawY);
-                            Console.Write("█");
-                        }
-                    }
-
-                }
-            }
-        }
-    }
-    private void DrawPaddleAndBall()
-    {
-        Console.ForegroundColor = ConsoleColor.White;
-
-        for (int x = 0; x < _paddleX; x++)
-        {
-            Console.SetCursorPosition(x, Height - PaddleHeight);
-            Console.Write(" ");
-        }
-
-        for (int i = 0; i < PaddleHeight; i++)
-        {
-            for (int j = 0; j < PaddleWidth; j++)
-            {
-                int drawX = _paddleX + j;
-                int drawY = Height - PaddleHeight + i;
-
-                Console.SetCursorPosition(drawX, drawY);
-                Console.Write("█");
-            }
-        }
-
-        for (int x = _paddleX + PaddleWidth; x < Width; x++)
-        {
-            Console.SetCursorPosition(x, Height - PaddleHeight);
-            Console.Write(" ");
-        }
-
-        Console.ForegroundColor = ConsoleColor.Red;
-
-        for (int i = 0; i < BallSize; i++)
-        {
-            for (int j = 0; j < BallSize; j++)
-            {
-                int drawX = _ballX + j;
-                int drawY = _ballY + i;
-
-                Console.SetCursorPosition(drawX, drawY);
-                Console.Write("O");
-            }
-        }
-    }
-    private void DrawHud()
-    {        
-        Console.ForegroundColor = ConsoleColor.White;
-        Console.SetCursorPosition(2, 0);
-        Console.Write($"Score: {_score}");
-        Console.SetCursorPosition(Width - 10, 0);
-        Console.Write($"Lives: {_lives}");
-    }
     private void InitializeBall()
     {
         _ballX = _paddleX + PaddleWidth / 2;
@@ -389,7 +298,7 @@ public class ArkanoidGame
             {
                 _currentLevel++;
                 GenerateBlocks(_blocks, GetBlockPatternForLevel(_currentLevel));
-                DrawBlocks(_blocks);
+                _UIHandler.DrawBlocks(_blocks, NumBlocksY, NumBlocksX, BlockHeight, BlockWidth);
                 _paddleX = Width / 2 - PaddleWidth / 2;
                 InitializeBall();
             }
@@ -467,12 +376,8 @@ public class ArkanoidGame
             _lives--;
             if (_lives == 0)
             {
-                GameFinish(false);
-                
-                Console.ForegroundColor= ConsoleColor.Red;
-                Console.SetCursorPosition(46, 24);
-                Console.Write("Replay level again?... (Y/N)");
-                Console.SetCursorPosition(60, 25);
+                _UIHandler.GameFinish(false, _ballX, _ballY, _score);
+                _UIHandler.Replay();
                 string output = Console.ReadLine();
                 if (output.Trim() == "Y" || output.Trim() == "y")
                 {
@@ -486,12 +391,17 @@ public class ArkanoidGame
             }
             else
             {
-                BallFall(_ballX, _ballY);
+                _UIHandler.BallFall(_ballX, _ballY);
             }
             InitializeBall();
         }
         else
         {
+            if (newBallX < 0)
+            {
+                newBallX = 0;
+                _ballDirToRight = !_ballDirToRight;
+            }
             _ballX = newBallX;
             _ballY = newBallY;
         }
@@ -501,154 +411,6 @@ public class ArkanoidGame
 
 
     }
-
-    private void GameFinish(bool win)
-    {
-        RemoveBlocks(_blocks);
-        DrawHud();
-        string[] _resultOver = new string[] { };
-        if (win)
-        {
-            _resultOver = new string[]
-            {
-            "                                                      ",
-            "  __     __          __          _______ _   _   _   ",
-            "  \\ \\   / /          \\ \\        / /_   _| \\ | | | |  ",
-            "   \\ \\_/ /__  _   _   \\ \\  /\\  / /  | | |  \\| | | |  ",
-            "    \\   / _ \\| | | |   \\ \\/  \\/ /   | | | . ` | | |  ",
-            "     | | (_) | |_| |    \\  /\\  /   _| |_| |\\  | |_|  ",
-            "     |_|\\___/ \\__,_|     \\/  \\/   |_____|_| \\_| (_)  ",
-            "                                                      ",
-            "                                                      "
-            };
-        }
-        else
-        {
-            BallFall(_ballX, _ballY);
-
-            _resultOver = new string[]
-            {
-                "                                                      ",
-                "   _____                         ____                 ",
-                "  / ____|                       / __ \\                ",
-                " | |  __  __ _ _ __ ___   ___  | |  | |_   _____ _ __ ",
-                " | | |_ |/ _` | '_ ` _ \\ / _ \\ | |  | \\ \\ / / _ \\ '__|",
-                " | |__| | (_| | | | | | |  __/ | |__| |\\ V /  __/ |   ",
-                "  \\_____|\\__,_|_| |_| |_|\\___|  \\____/  \\_/ \\___|_|   ",
-                "                                                      ",
-                "  score:" + _score + "                                             ",
-                "                                                      "
-            };
-        }
-
-        Console.ForegroundColor = ConsoleColor.White;
-        for (int i = 0; i < _resultOver.Length; i++)
-        {
-            Console.SetCursorPosition(Console.WindowWidth / 2 - 27, Console.WindowHeight / 2 - 4 + i);
-            Console.WriteLine(_resultOver[i]);
-            Thread.Sleep(100);
-        }
-
-        Thread.Sleep(1000);
-
-        Console.Clear();
-    }
-    private void BallFall(int drawX, int drawY)
-    {
-        Console.ForegroundColor = ConsoleColor.Red;
-        for (int i = 0; i < 8; i++)
-        {
-            Console.SetCursorPosition(drawX, drawY);
-            Console.Write(" ");
-            Thread.Sleep(100 - 8 * i);
-            Console.SetCursorPosition(drawX, drawY);
-            Console.Write("O");
-            Thread.Sleep(100 - 8 * i);
-        }
-        Console.SetCursorPosition(drawX, drawY);
-        Console.Write(" ");
-    }
-    private void Countdown()
-    {
-        Console.Clear();
-
-        string[] countdown3 = new string[]
-        {
-        "  ____   ",
-        " |___ \\  ",
-        "   __) | ",
-        "  |__ <  ",
-        "  ___) | ",
-        " |____/ ",
-        "         "
-        };
-        string[] countdown2 = new string[]
-        {
-        "   ___   ",
-        "  |__ \\  ",
-        "     ) | ",
-        "    / /  ",
-        "   / /_  ",
-        "  |____| ",
-        "         "
-        };
-        string[] countdown1 = new string[]
-        {
-        "    __   ",
-        "   /_ |  ",
-        "    | |  ",
-        "    | |  ",
-        "    | |  ",
-        "    |_|  ",
-        "         "
-        };
-
-        for (int i = 3; i > 0; i--)
-        {
-            string[] countdownGo = new string[] { };
-            if (i == 3)
-            {
-                countdownGo = countdown3;
-                Console.ForegroundColor = ConsoleColor.Red;
-            }
-            if (i == 2)
-            {
-                countdownGo = countdown2;
-                Console.ForegroundColor = ConsoleColor.DarkYellow;
-            }
-            if (i == 1)
-            {
-                countdownGo = countdown1;
-                Console.ForegroundColor = ConsoleColor.Green;
-            }
-
-            for (int x = 0; x < countdownGo.Length; x++)
-            {
-                Console.SetCursorPosition(Console.WindowWidth / 2 - 5, Console.WindowHeight / 2 - 4 + x);
-                Console.WriteLine(countdownGo[x]);
-            }
-
-            Thread.Sleep(100);
-            Console.Clear();
-
-        }
-    }
-    private bool IsLevelCompleted()
-    {
-        for (int y = 0; y < NumBlocksY; y++)
-        {
-            for (int x = 0; x < NumBlocksX; x++)
-            {
-                if (_blocks[x, y] != null && !_blocks[x, y].Destroyed)
-                {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
 
     public void SaveGame(int save)
     {
@@ -720,6 +482,7 @@ public class ArkanoidGame
     }
     public void LoadGame(string loadpath)
     {
+        _UIHandler = new UIHandler();
         using (StreamReader reader = new StreamReader(loadpath))
         {
 
@@ -775,7 +538,7 @@ public class ArkanoidGame
                 }
             }
         }
-        DrawBlocks(_blocks);
+        _UIHandler.DrawBlocks(_blocks, NumBlocksY, NumBlocksX, BlockHeight, BlockWidth);
     }
     private struct SaveData
     {
@@ -806,47 +569,7 @@ public class ArkanoidGame
             Console.Clear();
             Console.ForegroundColor= ConsoleColor.White;
             Console.SetCursorPosition(0, 0);
-            Console.Write(
-                "                               |   _____                       __  __                   |\n" +
-                "                               |  |  __ \\                     |  \\/  |                  |\n" +
-                "                               |  | |__) |_ _ _   _ ___  ___  | \\  / | ___ _ __  _   _  |\n" +
-                "                               |  |  ___/ _` | | | / __|/ _ \\ | |\\/| |/ _ \\ '_ \\| | | | |\n" +
-                "                               |  | |  | (_| | |_| \\__ \\  __/ | |  | |  __/ | | | |_| | |\n" +
-                "                               |  |_|   \\__,_|\\__,_|___/\\___| |_|  |_|\\___|_| |_|\\__,_| |\n" +
-                "                               |________________________________________________________|\n" +
-                "\n" +
-                "\n" +
-                "\n" +
-                "\n" +
-                "                                               ########################\n" +
-                "                                               #                      #\n" +
-                "                                               #     1. Continue      #\n" +
-                "                                               #                      #\n" +
-                "                                               ########################\n" +
-                "\n" +
-                "\n" +
-                "\n" +
-                "                                               ########################\n" +
-                "                                               #                      #\n" +
-                "                                               #      2. Reload       #\n" +
-                "                                               #                      #\n" +
-                "                                               ########################\n" +
-                "\n" +
-                "\n" +
-                "\n" +
-                "                                               ########################\n" +
-                "                                               #                      #\n" +
-                "                                               #     3. Save Game     #\n" +
-                "                                               #                      #\n" +
-                "                                               ########################\n" +
-                "\n" +
-                "\n" +
-                "\n" +
-                "                                               ########################\n" +
-                "                                               #                      #\n" +
-                "                                               #     4. Main Menu     #\n" +
-                "                                               #                      #\n" +
-                "                                               ########################");
+            _UIHandler.DrawPauseMenu();
             Console.ForegroundColor= ConsoleColor.Green;
             Console.SetCursorPosition(49, 42);
             Console.Write("Your choice (1-4): ");
@@ -857,7 +580,7 @@ public class ArkanoidGame
             {
                 case "1":
                     Console.Clear();
-                    DrawBlocks(_blocks);
+                    _UIHandler.DrawBlocks(_blocks, NumBlocksY, NumBlocksX, BlockHeight, BlockWidth);
                     validChoice = true;
                     break;
 
@@ -869,77 +592,7 @@ public class ArkanoidGame
                 case "3":
                     while (true)
                     {
-                        Console.Clear();
-                        Console.ForegroundColor= ConsoleColor.Red;
-                        Console.Write("<< Back (B/b)");
-                        Console.ForegroundColor= ConsoleColor.White;
-                        Console.Write(
-                            "                 |    _____                    _____                        |\n" +
-                            "                              |   / ____|                  / ____|                       |\n" +
-                            "                              |  | (___   __ ___   _____  | |  __  __ _ _ __ ___   ___   |\n" +
-                            "                              |   \\___ \\ / _` \\ \\ / / _ \\ | | |_ |/ _` | '_ ` _ \\ / _ \\  |\n" +
-                            "                              |   ____) | (_| |\\ V /  __/ | |__| | (_| | | | | | |  __/  |\n" +
-                            "                              |  |_____/ \\__,_| \\_/ \\___|  \\_____|\\__,_|_| |_| |_|\\___|  |\n" +
-                            "                              |__________________________________________________________|\n\n\n\n\n"
-                            );
-                        for (int i = 0; i <= 2; i++)
-                        {
-                            string saveFileName = $"save_{i}.sav";
-                            if (File.Exists(saveFileName))
-                            {
-                                using (StreamReader reader = new StreamReader(saveFileName))
-                                {
-                                    for (int j = 0; j < 5; j++)
-                                    {
-                                        reader.ReadLine();
-                                    }
-
-                                    string scoreLine = reader.ReadLine();
-                                    int score;
-                                    if (int.TryParse(scoreLine, out score))
-                                    {
-                                        string levelLine = reader.ReadLine();
-                                        int level;
-                                        if (int.TryParse(levelLine, out level))
-                                        {
-                                            string isAutosave = "";
-                                            if (i == _autosave-1)
-                                            {
-                                                isAutosave = "                                           #     Auto Save / Fast Save     #\n";
-                                            }
-                                            Console.ForegroundColor = ConsoleColor.White;
-                                            Console.Write(
-                                                "                                           #################################\n" +
-                                                "                                           #                               #\n" +
-                                               $"                                           #             Save {i + 1}            #\n" +
-                                                "                                           #                               #\n" +
-                                               $"                                           #            Level: {level}           #\n" +
-                                               $"                                           #            Score: {score}           #\n"+ isAutosave +
-                                                "                                           #                               #\n" +
-                                                "                                           #################################\n\n\n");
-                                        }
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                string isAutosave = "";
-                                if (i == _autosave-1)
-                                {
-                                    isAutosave = "                                           #     Auto Save / Fast Save     #\n";
-                                }
-                                Console.ForegroundColor = ConsoleColor.Green;
-                                Console.Write(
-                                "                                           #################################\n" +
-                                "                                           #                               #\n" +
-                               $"                                           #             Save {i+1}            #\n" +
-                                "                                           #                               #\n" +
-                                "                                           #      File does not exist      #\n" + isAutosave +
-                                "                                           #                               #\n" +
-                                "                                           #################################\n\n\n");
-                            }
-                            
-                        }
+                        _UIHandler.SaveMenu(_autosave, false);
         
                         Console.ForegroundColor = ConsoleColor.Green;
                         Console.SetCursorPosition(45, 42);
@@ -1059,31 +712,6 @@ public class ArkanoidGame
             }
         }
     
-    }
-    private void DrawBullets()
-    {
-        foreach (Bullet bullet in _bullets)
-        {
-            if (bullet.GunType == GunType.Glock)
-            {
-                Console.ForegroundColor= ConsoleColor.Green;
-            }
-            else if (bullet.GunType == GunType.Sniper)
-            {
-                Console.ForegroundColor = ConsoleColor.Blue;
-            }
-            else if (bullet.GunType == GunType.AK47)
-            {
-                Console.ForegroundColor = ConsoleColor.DarkMagenta;
-            }
-            bullet.Draw();
-        }
-
-        double countdown = Math.Max(0, _currentGunReloadTime.TotalSeconds - (DateTime.Now - _lastBulletTime).TotalSeconds);
-
-        Console.ForegroundColor = ConsoleColor.White;
-        Console.SetCursorPosition(Console.WindowWidth - 7 - _currentGunType.ToString().Length, Console.WindowHeight - 2);
-        Console.Write("  " + _currentGunType + " " + countdown.ToString("F1"));
     }
     private void SwitchGunType(GunType gunType)
     {
