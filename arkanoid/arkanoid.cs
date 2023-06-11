@@ -52,6 +52,8 @@ public class ArkanoidGame
     private TimeSpan _currentGunReloadTime = TimeSpan.FromSeconds(1);
     private UIHandler _UIHandler;
 
+    private int AKFired = 0;
+
     public ArkanoidGame()
     {
 
@@ -72,11 +74,11 @@ public class ArkanoidGame
         {
             if (!_paused)
             {
-                if (ballTime % 3 == 0)
+                if (ballTime % 8 == 0)
                 {
                     UpdateBall(_blocks);
                 }
-                if (bulletTime % 5 == 0)
+                if (bulletTime % 3 == 0)
                 {
                     UpdateBullets();
                 }
@@ -95,6 +97,7 @@ public class ArkanoidGame
                     if (_currentLevel >= NumLevels)
                     {
                         _gameOver = true;
+                        _UIHandler.End();
                         break;
                     }
                     _currentLevel++;
@@ -655,6 +658,15 @@ public class ArkanoidGame
             Bullet bullet = new Bullet(_paddleX + PaddleWidth / 2, Console.WindowHeight - 2, _currentGunType, _currentGunMaxBlocks);
             _bullets.Add(bullet);
 
+            if (_currentGunType == GunType.AK47)
+            {
+                AKFired++;
+                if (AKFired == 3)
+                {
+                    _lastBulletTime += TimeSpan.FromSeconds(3);
+                    AKFired = 0;
+                }
+            }
         }
     }
     private void UpdateBullets()
