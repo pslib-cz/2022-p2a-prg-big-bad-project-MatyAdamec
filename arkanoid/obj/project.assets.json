@@ -8,23 +8,23 @@
     "net6.0": []
   },
   "packageFolders": {
-    "C:\\Users\\Maty\\.nuget\\packages\\": {},
+    "C:\\Users\\matyas.adamec.021\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Maty\\source\\repos\\arkanoid\\arkanoid\\arkanoid.csproj",
+      "projectUniqueName": "C:\\Users\\matyas.adamec.021\\Source\\Repos\\2022-p2a-prg-big-bad-project-MatyAdamec\\arkanoid\\arkanoid.csproj",
       "projectName": "arkanoid",
-      "projectPath": "C:\\Users\\Maty\\source\\repos\\arkanoid\\arkanoid\\arkanoid.csproj",
-      "packagesPath": "C:\\Users\\Maty\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Maty\\source\\repos\\arkanoid\\arkanoid\\obj\\",
+      "projectPath": "C:\\Users\\matyas.adamec.021\\Source\\Repos\\2022-p2a-prg-big-bad-project-MatyAdamec\\arkanoid\\arkanoid.csproj",
+      "packagesPath": "C:\\Users\\matyas.adamec.021\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\matyas.adamec.021\\Source\\Repos\\2022-p2a-prg-big-bad-project-MatyAdamec\\arkanoid\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Maty\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\matyas.adamec.021\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -67,7 +67,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.103\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.100\\RuntimeIdentifierGraph.json"
       }
     }
   }

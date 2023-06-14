@@ -72,7 +72,7 @@ class Program
                     }
                 }
             }
-            else if (input == "3" && saveExists)
+            else if (input == "3")
             {
                 break;
             }
