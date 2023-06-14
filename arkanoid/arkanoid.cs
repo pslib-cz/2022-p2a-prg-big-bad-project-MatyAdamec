@@ -22,7 +22,7 @@ public class ArkanoidGame
     private const int PaddleWidth = 18;
     private const int PaddleHeight = 1;
     private const int BallSize = 1;
-    private const int InitialLives = 1;
+    private const int InitialLives = 3;
 
     private readonly Random _random = new Random();
     private readonly Block[,] _blocks = new Block[NumBlocksX, NumBlocksY];
